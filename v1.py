@@ -96,14 +96,28 @@ def draw_cloud_on_frame(frame, cloud_frame):
                 pass
     return new_frame
 
-def draw_cloud_on_vid(vid, cloud):
+def draw_cloud_on_vid(vid, cloud, candidates=None):
     new_vid = copy.copy(vid)
     for i in range(len(cloud)):
         frame = vid[i]
         cloud_frame = cloud[i]
         new_vid[i] = draw_cloud_on_frame(frame, cloud_frame)
+        if candidates is not None:
+            new_vid[i] = draw_candidates_on_frame(new_vid[i],
+                                                  candidates[i])
+        
 
     return new_vid[:-1]
+
+def draw_candidates_on_frame(frame, candidates):
+    new_frame = copy.copy(frame)
+    for i in range(len(candidates)):
+        x = i * grid_width
+        activ = min(30 * candidates[i], 255)
+      
+        new_frame[- 7 : -1,
+                  x - grid_width//2 : x + grid_width//2] = activ
+    return new_frame
         
 
 def play_vid(vid, wait=30):
@@ -112,11 +126,12 @@ def play_vid(vid, wait=30):
         cv.imshow('a', frame)
         cv.waitKey(wait)
     
-def load_and_play_cloud(num, wait=30, thresh=1.5):
+def load_and_play_all(num, wait=30, thresh=1.5):
     vid = load_vid(str(num) + '.mp4')
     vid = vid[:, 80:270]
     cloud = get_cloud(vid, thresh=thresh)
-    new_vid = draw_cloud_on_vid(vid, cloud)
+    candidates = get_cloud_candidates(cloud)
+    new_vid = draw_cloud_on_vid(vid, cloud, candidates)
     play_vid(new_vid)
 
 def get_row_votes(row):
@@ -125,7 +140,7 @@ def get_row_votes(row):
     components = {}
     cur_length = 0
     for i in range(len(row)):
-        if row[i] > 0:
+        if row[i] != 0:
             cur_length += 1
             continue
         if cur_length > 0:
@@ -162,7 +177,30 @@ def get_row_votes(row):
             val_2 = val
 
     return [(key_1, val_1), (key_2, val_2)]
+
+def get_cloud_frame_candidates(cloud_frame):
+    vote_arr = []
+    for row in cloud_frame:
+        vote_arr.append(get_row_votes(row))
+
+    return count_votes(vote_arr, cloud_width = cloud_frame.shape[1])
+
+def get_cloud_candidates(cloud):
+    cand_arr = []
+    for frame in cloud:
+        cand_arr.append(get_cloud_frame_candidates(frame))
+    return np.array(cand_arr)
         
+
+def count_votes(vote_arr, cloud_width=64):
+    candidates = np.zeros(cloud_width)
+    for elem in vote_arr:
+        for pos, length in elem:
+            candidates[pos : pos + length] += 1
+
+    return candidates
+
+
     
-    
+
     
