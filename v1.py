@@ -96,7 +96,7 @@ def draw_cloud_on_frame(frame, cloud_frame):
                 pass
     return new_frame
 
-def draw_cloud_on_vid(vid, cloud, candidates=None):
+def draw_cloud_on_vid(vid, cloud, candidates=None, fencers=None):
     new_vid = copy.copy(vid)
     for i in range(len(cloud)):
         frame = vid[i]
@@ -105,15 +105,37 @@ def draw_cloud_on_vid(vid, cloud, candidates=None):
         if candidates is not None:
             new_vid[i] = draw_candidates_on_frame(new_vid[i],
                                                   candidates[i])
+        if fencers is not None:
+            new_vid[i] = draw_fencers_on_frame(new_vid[i],
+                                               fencers[i])
         
 
     return new_vid[:-1]
+
+def draw_fencers_on_frame(frame, fencers):
+    new_frame = copy.copy(frame)
+    x1 = int(fencers[0] * grid_width)
+    x2 = int(fencers[1] * grid_width)
+    
+    try:
+        if x1 >= 0:
+            new_frame[-14 : -7, x1 - grid_width//2 :
+                      x1 + grid_width//2] = (0, 0, 255)
+    except:
+        pass
+    try:
+        if x2 >= 0:
+            new_frame[-14 : -7, x2 - grid_width//2 :
+                      x2 + grid_width//2] = (0, 255, 0)
+    except:
+        pass
+    return new_frame
 
 def draw_candidates_on_frame(frame, candidates):
     new_frame = copy.copy(frame)
     for i in range(len(candidates)):
         x = i * grid_width
-        activ = min(30 * candidates[i], 255)
+        activ = min(50 * candidates[i], 255)
       
         new_frame[- 7 : -1,
                   x - grid_width//2 : x + grid_width//2] = activ
@@ -126,16 +148,23 @@ def play_vid(vid, wait=30):
         cv.imshow('a', frame)
         cv.waitKey(wait)
     
-def load_and_play_all(num, wait=30, thresh=1.5):
+def load_and_do_all(num, wait=30, thresh=1.5, mode='play', smooth_cand=False):
     vid = load_vid(str(num) + '.mp4')
     vid = vid[:, 80:270]
     cloud = get_cloud(vid, thresh=thresh)
     candidates = get_cloud_candidates(cloud, vid)
-    new_vid = draw_cloud_on_vid(vid, cloud, candidates)
-    play_vid(new_vid, wait=wait)
+    if smooth_cand:
+        candidates = smooth_candidates(candidates)
+    fencers = naive_fencer_positions(candidates)
+    new_vid = draw_cloud_on_vid(vid, cloud, candidates, fencers)
+    if mode == 'play':
+        play_vid(new_vid, wait=wait)
+    elif mode == 'return':
+        return new_vid
+    
 
 def acceptable_surroundings(frame, row_ind, col_ind,
-                            inten_thresh=40, white_thresh=None):
+                            inten_thresh=30, white_thresh=None):
     x, y = col_ind * grid_width, row_ind * grid_height
     window = frame[y - 2 : y + 3, x - 2 : x + 3]
     colours = np.average(window, axis=(0, 1))
@@ -154,8 +183,7 @@ def acceptable_surroundings(frame, row_ind, col_ind,
     return True
     
 def get_row_votes(row, original_frame, row_ind):
-    # row is a 1-dim np array. Returns indices central
-    # to clusters that might be fencers
+    # row is a 1-dim np array.
     components = {}
     cur_length = 0
     
@@ -217,6 +245,8 @@ def get_cloud_candidates(cloud, vid):
         cand_arr.append(get_cloud_frame_candidates(cloud_frame,
                                                    frame))
     return np.array(cand_arr)
+
+
         
 
 def count_votes(vote_arr, cloud_width=64):
@@ -226,6 +256,35 @@ def count_votes(vote_arr, cloud_width=64):
             candidates[pos : pos + length] += 1
 
     return candidates
+
+def smooth_candidates(candidates):
+    return signal.medfilt(candidates, (1, 3))
+
+def get_naive_fencer_positions_frame(cand_frame):
+    fencer_1 = np.argmax(cand_frame)
+    dummy_frame = copy.copy(cand_frame)
+    dummy_frame[fencer_1 - 10 : fencer_1 + 11] = 0
+    fencer_2 = np.argmax(dummy_frame)
+
+    if np.sum(cand_frame[fencer_1 - 2: fencer_1 + 3]) < 6:
+        fencer_1 = fencer_2 = -1
+    if np.sum(cand_frame[fencer_2 - 2: fencer_2 + 3]) < 6:
+        fencer_2 = -1
+
+    if fencer_1 > fencer_2:
+        fencer_1, fencer_2 = fencer_2, fencer_1
+    return fencer_1, fencer_2
+
+def naive_fencer_positions(cand):
+    fencer_arr = np.zeros((cand.shape[0], 2))
+    for i in range(len(cand)):
+        cand_frame = cand[i]
+        fencer_1, fencer_2 = get_naive_fencer_positions_frame(cand_frame)
+        fencer_arr[i][0] = fencer_1
+        fencer_arr[i][1] = fencer_2
+    return fencer_arr
+    
+    
 
 
     
