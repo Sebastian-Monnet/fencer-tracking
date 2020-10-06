@@ -148,7 +148,7 @@ def play_vid(vid, wait=30):
         cv.imshow('a', frame)
         cv.waitKey(wait)
     
-def load_and_do_all(num, wait=30, thresh=1.5, mode='play', smooth_cand=False):
+def load_and_do_all(num, wait=30, thresh=1.5, mode='play', smooth_cand=True):
     vid = load_vid(str(num) + '.mp4')
     vid = vid[:, 80:270]
     cloud = get_cloud(vid, thresh=thresh)
@@ -263,7 +263,10 @@ def smooth_candidates(candidates):
 def get_naive_fencer_positions_frame(cand_frame):
     fencer_1 = np.argmax(cand_frame)
     dummy_frame = copy.copy(cand_frame)
-    dummy_frame[fencer_1 - 10 : fencer_1 + 11] = 0
+
+    num_voted_cands = np.sum(cand_frame > 0)
+    radius = max(num_voted_cands, 8)
+    dummy_frame[fencer_1 - radius : fencer_1 + radius + 1] = 0
     fencer_2 = np.argmax(dummy_frame)
 
     if np.sum(cand_frame[fencer_1 - 2: fencer_1 + 3]) < 6:
