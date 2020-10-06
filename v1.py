@@ -130,17 +130,40 @@ def load_and_play_all(num, wait=30, thresh=1.5):
     vid = load_vid(str(num) + '.mp4')
     vid = vid[:, 80:270]
     cloud = get_cloud(vid, thresh=thresh)
-    candidates = get_cloud_candidates(cloud)
+    candidates = get_cloud_candidates(cloud, vid)
     new_vid = draw_cloud_on_vid(vid, cloud, candidates)
-    play_vid(new_vid)
+    play_vid(new_vid, wait=wait)
 
-def get_row_votes(row):
+def acceptable_surroundings(frame, row_ind, col_ind,
+                            inten_thresh=40, white_thresh=None):
+    x, y = col_ind * grid_width, row_ind * grid_height
+    window = frame[y - 2 : y + 3, x - 2 : x + 3]
+    colours = np.average(window, axis=(0, 1))
+    
+    ave_int = np.average(colours)
+
+    if ave_int <= inten_thresh:
+        return False
+
+    if white_thresh is None:
+        return True
+
+    if np.max(colours) - np.min(colours) > white_thresh:
+        return False
+
+    return True
+    
+def get_row_votes(row, original_frame, row_ind):
     # row is a 1-dim np array. Returns indices central
     # to clusters that might be fencers
     components = {}
     cur_length = 0
+    
     for i in range(len(row)):
-        if row[i] != 0:
+        if row[i] != 0 and acceptable_surroundings(original_frame,
+                                                   row_ind,
+                                                   i,
+                                                   white_thresh=30):
             cur_length += 1
             continue
         if cur_length > 0:
@@ -178,17 +201,21 @@ def get_row_votes(row):
 
     return [(key_1, val_1), (key_2, val_2)]
 
-def get_cloud_frame_candidates(cloud_frame):
+def get_cloud_frame_candidates(cloud_frame, original_frame):
     vote_arr = []
-    for row in cloud_frame:
-        vote_arr.append(get_row_votes(row))
+    for i in range(len(cloud_frame)):
+        row = cloud_frame[i]
+        vote_arr.append(get_row_votes(row, original_frame, i))
 
     return count_votes(vote_arr, cloud_width = cloud_frame.shape[1])
 
-def get_cloud_candidates(cloud):
+def get_cloud_candidates(cloud, vid):
     cand_arr = []
-    for frame in cloud:
-        cand_arr.append(get_cloud_frame_candidates(frame))
+    for i in range(len(cloud)):
+        cloud_frame = cloud[i]
+        frame = vid[i]
+        cand_arr.append(get_cloud_frame_candidates(cloud_frame,
+                                                   frame))
     return np.array(cand_arr)
         
 
