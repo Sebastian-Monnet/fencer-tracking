@@ -135,7 +135,7 @@ def draw_candidates_on_frame(frame, candidates):
     new_frame = copy.copy(frame)
     for i in range(len(candidates)):
         x = i * grid_width
-        activ = min(50 * candidates[i], 255)
+        activ = min(10 * candidates[i], 255)
       
         new_frame[- 7 : -1,
                   x - grid_width//2 : x + grid_width//2] = activ
@@ -260,18 +260,33 @@ def count_votes(vote_arr, cloud_width=64):
 def smooth_candidates(candidates):
     return signal.medfilt(candidates, (1, 3))
 
+def remove_maximum(arr, max_ind):
+    new_arr = copy.copy(arr)
+    i = max_ind
+    while i < len(arr) - 1 and new_arr[i] >= new_arr[i + 1]:
+        new_arr[i] = 0
+        i += 1
+
+    i = max_ind - 1
+    while i > 1 and new_arr[i] >= new_arr[i - 1]:
+        new_arr[i] = 0
+        i -= 1
+
+    return new_arr
+
 def get_naive_fencer_positions_frame(cand_frame):
     fencer_1 = np.argmax(cand_frame)
-    dummy_frame = copy.copy(cand_frame)
+    
+    dummy_frame = remove_maximum(cand_frame, fencer_1)
 
-    num_voted_cands = np.sum(cand_frame > 0)
-    radius = max(num_voted_cands, 8)
-    dummy_frame[fencer_1 - radius : fencer_1 + radius + 1] = 0
+    radius = 10
+    #dummy_frame[fencer_1 - radius : fencer_1 + radius + 1] = 0
+
     fencer_2 = np.argmax(dummy_frame)
 
     if np.sum(cand_frame[fencer_1 - 2: fencer_1 + 3]) < 6:
         fencer_1 = fencer_2 = -1
-    if np.sum(cand_frame[fencer_2 - 2: fencer_2 + 3]) < 6:
+    if np.sum(dummy_frame[fencer_2 - 2: fencer_2 + 3]) < 6:
         fencer_2 = -1
 
     if fencer_1 > fencer_2:
