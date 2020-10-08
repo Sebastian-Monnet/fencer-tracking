@@ -135,7 +135,7 @@ def draw_candidates_on_frame(frame, candidates):
     new_frame = copy.copy(frame)
     for i in range(len(candidates)):
         x = i * grid_width
-        activ = min(10 * candidates[i], 255)
+        activ = min(30 * candidates[i], 255)
       
         new_frame[- 7 : -1,
                   x - grid_width//2 : x + grid_width//2] = activ
