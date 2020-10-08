@@ -23,9 +23,37 @@ def get_path(i):
         if f2 >= 0:
             path[i, f2] = 255
         
-    vid = draw_cloud_on_vid(vid, cloud, cand, fencers)
 
     return path, vid
+
+def get_series(i):
+    path, vid = get_path(i)
+    
+    filt = filter_isolated(path)
+    left, right = split_series(filt)
+
+    left = remove_outliers(left[0], left[1], 20)
+    left = remove_outliers(left[0], left[1], 10)
+
+    right = remove_outliers(right[0], right[1], 20)
+    right = remove_outliers(right[0], right[1], 10)
+
+    left = fill_series(left[0], left[1], path)
+    right = fill_series(right[0], right[1], path)
+
+    left = smooth_series(left)
+    right = smooth_series(right)
+
+    vid = draw_series_on_vid(vid[:-1], left, right)
+
+    return vid, left, right
+
+def draw_series_on_vid(vid, left, right):
+    new_vid = copy.copy(vid)
+    for i in range(len(vid)):
+        new_vid[i] = draw_fencers_on_frame(vid[i],
+                                       (left[i], right[i]))
+    return new_vid
     
 def filter_isolated(path, x_rad=5, y_rad=5):
     path = copy.copy(path)
@@ -210,9 +238,32 @@ def get_segment(path, y, x):
             running = False
     return points
 
+def fill_series(t_arr, pos_arr, path):
+    total_length = len(path)
+    series = np.zeros(total_length)
+    for ind, t in enumerate(t_arr[:-1]):
+        if t_arr[ind + 1] == t + 1:
+            series[t] = pos_arr[ind]
+        else:
+            s = t_arr[ind + 1]
+            for i in range(t, s):
+                series[i] = pos_arr[ind] + (i - t)/(s - t) * \
+                            (pos_arr[ind + 1] - pos_arr[ind])
+    return series
+    
 
-
-
+def smooth_series(series, radius=5):
+    new_series = copy.copy(series)
+    for i in range(len(series)):
+        a = max(i - radius, 0)
+        b = min(i + radius + 1, len(series))
+        window = series[a : b]
+        if np.sum(window) == 0:
+            new_series[i] = 0
+        else:
+            new_series[i] = np.average(window[window > 0])
+    return new_series
+'''
 raw_left_arr = []
 raw_right_arr = []
 left_arr = []
@@ -250,3 +301,4 @@ for i in range(15):
     plt.scatter(raw_right[0], raw_right[1])
     plt.scatter(right[0], right[1])
     plt.show()
+'''
