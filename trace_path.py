@@ -56,9 +56,6 @@ def split_series(path):
     
     
 
-
-    
-
     for i, row in enumerate(path):
         count = np.sum(row) // 255
         if count == 0:
@@ -115,11 +112,39 @@ def remove_outliers(t_arr, pos_arr):
         if np.abs(pos_arr[i] - pos_arr[i+2]) < 4 and \
            np.abs(pos_arr[i+1] - pos_arr[i]) > 3:
             to_kill.append(i + 1)
-    print(to_kill)
     t_arr = [t_arr[i] for i in range(len(t_arr)) if i not in to_kill]
     pos_arr = [pos_arr[i] for i in range(len(pos_arr)) if i not in to_kill]
     
     return t_arr, pos_arr
+
+def remove_outliers(t_arr, pos_arr, radius):
+    t_arr = copy.copy(t_arr)
+    pos_arr = copy.copy(pos_arr)
+    to_kill = []
+    for i in range(len(t_arr)):
+        a = max(i - radius, 0)
+        b = min(i + radius + 1, len(pos_arr))
+        sub_pos = pos_arr[a : b]
+
+        std = np.std(sub_pos)
+        lq = np.quantile(sub_pos, 0.25)
+        uq = np.quantile(sub_pos, 0.75)
+        iqr = uq - lq
+        
+        median = np.median(sub_pos)
+
+        if pos_arr[i] > uq + 1.5 * iqr or pos_arr[i] < lq - 1.5 * iqr:
+            to_kill.append(i)
+
+    to_kill.reverse()
+
+    for i in to_kill:
+        t_arr.pop(i)
+        pos_arr.pop(i)
+
+    return t_arr, pos_arr
+
+    
     
             
         
@@ -161,4 +186,40 @@ def get_segment(path, y, x):
         else:
             running = False
     return points
-        
+
+raw_left_arr = []
+raw_right_arr = []
+left_arr = []
+right_arr = []
+for i in range(1, 11):
+    path, vid = get_path(i)
+    filt = filter_isolated(path)
+    left, right = split_series(filt)
+    raw_left_arr.append(copy.copy(left))
+    raw_right_arr.append(copy.copy(right))
+
+    left = remove_outliers(left[0], left[1], 20)
+    left = remove_outliers(left[0], left[1], 10)
+    right = remove_outliers(right[0], right[1], 20)
+    right = remove_outliers(right[0], right[1], 10)
+
+    left_arr.append(left)
+    right_arr.append(right)
+
+
+for i in range(10):
+    raw_left, raw_right = raw_left_arr[i], raw_right_arr[i]
+
+    left, right = left_arr[i], right_arr[i]
+    print(i + 1)
+    print('left')
+
+    plt.scatter(raw_left[0], raw_left[1])
+    plt.scatter(left[0], left[1])
+    plt.show()
+
+    print('right')
+
+    plt.scatter(raw_right[0], raw_right[1])
+    plt.scatter(right[0], right[1])
+    plt.show()
