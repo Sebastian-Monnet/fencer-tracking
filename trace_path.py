@@ -55,13 +55,18 @@ def split_series(path):
     right_pos = []
     
     
-
     for i, row in enumerate(path):
-        count = np.sum(row) // 255
-        if count == 0:
+        nonzero_inds = [k for k in range(len(row)) if row[k] != 0]
+
+        if np.sum(row) == 0:
             continue
-        if count == 1:
-            pos = np.argmax(row)
+        one_fencer = False
+        for k in range(len(row) - 15):
+            if np.sum(row[k : k + 15]) == np.sum(row):
+                one_fencer = True
+
+        if one_fencer:
+            pos = np.average(nonzero_inds)
             if left_t == [] or right_t == []:
                 continue
             if np.abs(pos - left_pos[-1]) \
@@ -71,17 +76,35 @@ def split_series(path):
             else:
                 right_t.append(i)
                 right_pos.append(pos)
+            continue
+            
+       
+        losses = np.zeros(path.shape[1])
+        for split in range(len(row)):
+            left_inds = np.array([k for k in nonzero_inds if k <= split])
+            right_inds = np.array([k for k in nonzero_inds if k > split])
 
-        else:
-            pos1 = np.argmax(row)
-            pos2 = pos1 + 1 + np.argmax(row[pos1 + 1:])
+            if len(left_inds) == 0:
+                left_mse = -1e-10
+            else:
+                left_mse = np.mean((left_inds - np.mean(left_inds))**2)
 
-            left_t.append(i)
-            right_t.append(i)
+            if len(right_inds) == 0:
+                right_mse = -1e-10
+            else:
+                right_mse = np.mean(right_inds - np.mean((right_inds))**2)
+           
+            losses[split] = left_mse + right_mse
+        split = np.argmin(losses)
 
-            left_pos.append(pos1)
-            right_pos.append(pos2)
+        new_left_pos = np.mean([k for k in nonzero_inds if k <= split])
+        new_right_pos = np.mean([k for k in nonzero_inds if k > split])
 
+        left_t.append(i)
+        right_t.append(i)
+        left_pos.append(new_left_pos)
+        right_pos.append(new_right_pos)
+        
     return (left_t, left_pos), (right_t, right_pos)
             
 def get_missing_sections(t_arr, path):
@@ -187,11 +210,15 @@ def get_segment(path, y, x):
             running = False
     return points
 
+
+
+
 raw_left_arr = []
 raw_right_arr = []
 left_arr = []
 right_arr = []
-for i in range(1, 11):
+
+for i in range(1, 16):
     path, vid = get_path(i)
     filt = filter_isolated(path)
     left, right = split_series(filt)
@@ -207,7 +234,7 @@ for i in range(1, 11):
     right_arr.append(right)
 
 
-for i in range(10):
+for i in range(15):
     raw_left, raw_right = raw_left_arr[i], raw_right_arr[i]
 
     left, right = left_arr[i], right_arr[i]
