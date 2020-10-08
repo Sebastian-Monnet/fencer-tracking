@@ -110,11 +110,15 @@ def get_missing_sections(t_arr, path):
 def remove_outliers(t_arr, pos_arr):
     t_arr = copy.copy(t_arr)
     pos_arr = copy.copy(pos_arr)
+    to_kill = []
     for i in range(len(pos_arr) - 3, -1, -1):
-        if np.abs(pos_arr[i] - pos_arr[i + 2]) < 4 and \
-           np.abs(pos_arr[i+1] - pos_arr[i]) > 5:
-            t_arr.pop(i)
-            pos_arr.pop(i)
+        if np.abs(pos_arr[i] - pos_arr[i+2]) < 4 and \
+           np.abs(pos_arr[i+1] - pos_arr[i]) > 3:
+            to_kill.append(i + 1)
+    print(to_kill)
+    t_arr = [t_arr[i] for i in range(len(t_arr)) if i not in to_kill]
+    pos_arr = [pos_arr[i] for i in range(len(pos_arr)) if i not in to_kill]
+    
     return t_arr, pos_arr
     
             
