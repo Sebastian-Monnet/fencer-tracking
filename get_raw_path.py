@@ -284,9 +284,9 @@ def get_naive_fencer_positions_frame(cand_frame):
 
     fencer_2 = np.argmax(dummy_frame)
 
-    if np.sum(cand_frame[fencer_1 - 2: fencer_1 + 3]) < 6:
+    if np.sum(cand_frame[fencer_1 - 2: fencer_1 + 3]) < 9:
         fencer_1 = fencer_2 = -1
-    if np.sum(dummy_frame[fencer_2 - 2: fencer_2 + 3]) < 6:
+    if np.sum(dummy_frame[fencer_2 - 2: fencer_2 + 3]) < 9:
         fencer_2 = -1
 
     if fencer_1 > fencer_2:
