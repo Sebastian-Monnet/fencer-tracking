@@ -155,7 +155,7 @@ def process_series(series, path):
     ma_smooth = (series[2:] + series[1 : -1] + series[:-2]) / 3
 
     for i in range(1, len(series) - 1):
-        if series[i] != -1:
+        if series[i - 1] != -1:
             series[i] = ma_smooth[i - 1]
 
     return series
