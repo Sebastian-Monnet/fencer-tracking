@@ -112,6 +112,12 @@ def draw_cloud_on_vid(vid, cloud, candidates=None, fencers=None):
 
     return new_vid[:-1]
 
+def draw_fencers_on_vid(vid, left, right):
+    vid = copy.copy(vid)
+    for i in range(len(left)):
+        vid[i] = draw_fencers_on_frame(vid[i], (left[i], right[i]))
+    return vid
+
 def draw_fencers_on_frame(frame, fencers):
     new_frame = copy.copy(frame)
     x1 = int(fencers[0] * grid_width)
@@ -164,7 +170,7 @@ def load_and_do_all(num, wait=30, thresh=1.5, mode='play', smooth_cand=True):
     
 
 def acceptable_surroundings(frame, row_ind, col_ind,
-                            inten_thresh=30, white_thresh=None):
+                            inten_thresh=70, white_thresh=None):
     x, y = col_ind * grid_width, row_ind * grid_height
     window = frame[y - 2 : y + 3, x - 2 : x + 3]
     colours = np.average(window, axis=(0, 1))
