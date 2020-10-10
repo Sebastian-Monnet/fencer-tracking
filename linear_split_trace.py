@@ -144,7 +144,7 @@ def has_teleports(series, thresh):
     return False
 
 
-def process_series(series):
+def process_series(series, path):
     series = remove_outliers(series[0], series[1], 20)
     series = remove_outliers(series[0], series[1], 10)
 
@@ -160,53 +160,7 @@ def process_series(series):
 
     return series
 
-path_arr = []
-vid_arr = []
-score_arr = []
-margin_arr = []
-balance_arr = []
-
-good_paths = []
-good_vids = []
-good_inds = []
-good_series = []
 
 
-for i in [1, 3, 7, 24, 31, 34, 57, 60, 71, 72, 75, 76, 78, 79, 86, 87, 92, 95]:
-    if i % 10 == 0:
-        print(i)
-    path, vid = get_path(i)
-    
-    sep_ind, score, margin, balance = get_sep_ind(path)
-    
-    #balance_arr.append(balance)
-    #score_arr.append(score)
-    #margin_arr.append(margin)
-    #path_arr.append(path)
-    #vid_arr.append(vid)
-    if margin > 3 and (max(balance) / min(balance)) < 3:
-        
-        left, right = get_series(path, sep_ind)
-        left = process_series(left)
-        right = process_series(right)
-        if has_teleports(left[10:], 5) or has_teleports(right[10:], 5):
-            continue
-            
 
-    
-        vid = draw_fencers_on_vid(vid, left, right)
-        good_inds.append(i)
-        good_paths.append(path)
-        good_vids.append(vid)
-        good_series.append((left, right))
-
-
-input('Press enter when ready to play videos.')
-for i, vid in enumerate(good_vids):
-    print(good_inds[i])
-    left, right = good_series[i]
-    print(has_teleports(left, 5), has_teleports(right, 5))
-    play_vid(vid)
-     
-        
        
