@@ -191,7 +191,7 @@ def get_row_votes(row, original_frame, row_ind):
         if row[i] != 0 and acceptable_surroundings(original_frame,
                                                    row_ind,
                                                    i,
-                                                   white_thresh=30):
+                                                   white_thresh=50):
             cur_length += 1
             continue
         if cur_length > 0:

@@ -5,14 +5,16 @@ from get_raw_path import *
 
 
 
-
 def get_path(i):
-    vid = load_vid(str(i) + '.mp4')
+    vid = load_vid('Clips/' + str(i) + '.mp4')
     vid = vid[:, 80:270]
     cloud = get_cloud(vid, thresh=1.5)
     cand = get_cloud_candidates(cloud, vid)
     cand = smooth_candidates(cand)
     fencers = naive_fencer_positions(cand)
+
+    for i in range(len(vid) - 1):
+        vid[i] = draw_candidates_on_frame(vid[i], cand[i])
 
     path = np.zeros_like(cand)
 
@@ -22,9 +24,10 @@ def get_path(i):
             path[i, f1] = 255
         if f2 >= 0:
             path[i, f2] = 255
+
         
 
-    return path, vid
+    return path[10 : -25], vid[10 : -25]
 
 def get_series(i):
     path, vid = get_path(i)
@@ -46,7 +49,7 @@ def get_series(i):
 
     vid = draw_series_on_vid(vid[:-1], left, right)
 
-    return vid, left, right
+    return vid, left, right, path
 
 def draw_series_on_vid(vid, left, right):
     new_vid = copy.copy(vid)
@@ -198,20 +201,6 @@ def remove_outliers(t_arr, pos_arr, radius):
     
     
             
-        
-def fill_gaps(t_arr, pos_arr, path):
-    series = np.zeros((path.shape[0],))
-    for i, t in enumerate(t_arr):
-        series[t] = pos_arr[i]
-
-    missing_sections = get_missing_sections(t_arr, path)
-
-    for a, b in missing_sections:
-        pass
-
-    
-
-
 
 def get_neighbours(path, y, x):
     arr = []
@@ -239,8 +228,11 @@ def get_segment(path, y, x):
     return points
 
 def fill_series(t_arr, pos_arr, path):
+    if len(t_arr) == 0:
+        return np.zeros(len(path))
     total_length = len(path)
     series = np.zeros(total_length)
+
     for ind, t in enumerate(t_arr[:-1]):
         if t_arr[ind + 1] == t + 1:
             series[t] = pos_arr[ind]
@@ -249,6 +241,12 @@ def fill_series(t_arr, pos_arr, path):
             for i in range(t, s):
                 series[i] = pos_arr[ind] + (i - t)/(s - t) * \
                             (pos_arr[ind + 1] - pos_arr[ind])
+
+    for i in range(t_arr[0]):
+        series[i] = pos_arr[0]
+
+    for i in range(t_arr[-1], total_length):
+        series[i] = pos_arr[-1]
     return series
     
 
