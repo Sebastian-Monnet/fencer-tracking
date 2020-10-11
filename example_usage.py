@@ -16,7 +16,7 @@ good_inds = []
 good_series = []
 
 
-for i in range(1, 101):
+for i in range(1, 21):
     if i % 10 == 0:
         print(i)
     path, vid = get_path(i)
