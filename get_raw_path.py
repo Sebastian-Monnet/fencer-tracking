@@ -348,7 +348,7 @@ def count_votes(vote_arr, cloud_width=64):
     return candidates
 
 def smooth_candidates(candidates):
-    return signal.medfilt(candidates, (3, 3))
+    return signal.medfilt(candidates, (1, 3))
 
 def remove_maximum(arr, max_ind):
     '''

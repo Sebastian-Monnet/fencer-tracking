@@ -16,7 +16,7 @@ good_inds = []
 good_series = []
 
 
-for i in range(1, 21):
+for i in range(1, 101):
     if i % 10 == 0:
         print(i)
     path, vid = get_path(i)
@@ -31,13 +31,14 @@ for i in range(1, 21):
         if has_teleports(left[10:], 5) or has_teleports(right[10:], 5):
             continue
             
-
+        
     
         vid = draw_fencers_on_vid(vid, left, right)
         good_inds.append(i)
         good_paths.append(path)
         good_vids.append(vid)
         good_series.append((left, right))
+        print('Good vids:', len(good_vids))
 
 
 input('Press enter when ready to play videos.')
